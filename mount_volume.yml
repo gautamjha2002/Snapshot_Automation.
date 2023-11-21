@@ -1,0 +1,29 @@
+---
+- name: Mount sdc volume to /home/ubuntu/zeeve
+  hosts: all
+  become: yes 
+
+  tasks:
+    - name: Partition the volume
+      command: parted -s /dev/sdc mklabel gpt mkpart primary ext4 0% 100%
+
+    - name: Format the partition as ext4
+      command: mkfs.ext4 /dev/sdc1
+
+    - name: Create mount point if it doesn't exist
+      file:
+        path: /home/ubuntu/zeeve
+        state: directory
+
+    - name: Mount sdc volume
+      mount:
+        src: /dev/sdc1 
+        path: /home/ubuntu/zeeve
+        fstype: ext4   
+        state: mounted
+    
+    - name: Add entry to /etc/fstab for persistent mount
+      lineinfile:
+        path: /etc/fstab
+        line: "/dev/sdc1 /home/ubuntu/zeeve auto defaults 0 0"
+        state: present
