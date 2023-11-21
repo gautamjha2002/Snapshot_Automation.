@@ -21,7 +21,7 @@ pipeline {
         }
         stage('Mounting Volume To the Instance') {
             steps {
-                sh 'ansible-playbook -i '${params.SERVER_IP},' mount_volume.yml -u root --extra-vars "ansible_ssh_pass=mLGCTk5gV&+f"'
+                sh 'ansible-playbook -i '${params.SERVER_IP}' mount_volume.yml -u root --extra-vars "ansible_ssh_pass=mLGCTk5gV&+f"'
             }
         }
         stage('Deploy') {
