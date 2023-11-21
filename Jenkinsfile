@@ -23,13 +23,14 @@ pipeline {
                     unstash 'IPStash'
                     def serverIP = readFile('serverIP.txt').trim()
                     echo "${serverIP}"
-                    // Continue with your remaining steps
+                    sh "ansible-playbook -i '${serverIP},' mount_volume.yml -u root --extra-vars \"ansible_ssh_pass=mLGCTk5gV&+f\""
                 }
             }
         }
-        stage('Deploy') {
+        stage('Destroying Infra') {
             steps {
-                sh 'terraform destroy -auto-approve -var=api_token=${params.LINODE_ACCESS_TOKEN}' 
+                // sh 'terraform destroy -auto-approve -var=api_token=${params.LINODE_ACCESS_TOKEN}' 
+                echo "Destroying Infra"
             }
         }
     }
