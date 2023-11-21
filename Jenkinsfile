@@ -7,21 +7,24 @@ pipeline {
     stages {
         stage('Creating Node') {
             steps {
-                sh '''
+                script {
                     echo "Initializing The Terraform"
-                    terraform init
+                    sh 'terraform init'
                     echo "Applying The Configuration"
-                    terraform apply -auto-approve -var="api_token=$params.LINODE_ACCESS_TOKEN"
+                    sh "terraform apply -auto-approve -var=\"api_token=${params.LINODE_ACCESS_TOKEN}\""
                     echo "Get The public IP of server"
                     def serverIP = sh(script: 'terraform output public_ip', returnStdout: true).trim()
                     echo "Passing Server Ip to Next Stage"
                     buildWithParameters([SERVER_IP: serverIP])
-                '''
+                }
             }
         }
         stage('Mounting Volume To the Instance') {
             steps {
-                sh 'ansible-playbook -i '${params.SERVER_IP}' mount_volume.yml -u root --extra-vars "ansible_ssh_pass=mLGCTk5gV&+f"'
+                script {
+                    sh "ansible-playbook -i ${params.SERVER_IP} mount_volume.yml -u root --extra-vars 'ansible_ssh_pass=mLGCTk5gV&+f'"
+                    // Consider using Jenkins credentials for the password
+                }
             }
         }
         stage('Deploy') {
