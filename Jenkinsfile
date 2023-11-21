@@ -1,4 +1,7 @@
 pipeline {
+    parameters {
+        string(name: "LINODE_ACCESS_TOKEN", defaultValue: "", trim: true, description: "Provide Linode cloud Access Token")
+    }
     agent any
     stages {
         stage('Creating Node') {
@@ -24,9 +27,9 @@ pipeline {
                 }
             }
         }
-        stage('Destroy') {
+        stage('Deploy') {
             steps {
-               sh 'terraform destroy -auto-approve -var=api_token=${params.LINODE_ACCESS_TOKEN}' 
+                sh 'terraform destroy -auto-approve -var=api_token=${params.LINODE_ACCESS_TOKEN}' 
             }
         }
     }
