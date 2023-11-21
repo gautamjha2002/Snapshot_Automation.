@@ -10,7 +10,7 @@ pipeline {
                     sh "terraform apply -auto-approve -var=\"api_token=${params.LINODE_ACCESS_TOKEN}\""
                     sh 'terraform output -raw public_ip > serverIP.txt' // Directly save IP to file
                     stash name: 'IPStash', includes: 'serverIP.txt'
-                    sh 'terraform destroy -auto-approve' 
+                    
                 }
             }
         }
@@ -24,9 +24,9 @@ pipeline {
                 }
             }
         }
-        stage('Deploy') {
+        stage('Destroy') {
             steps {
-                echo 'Deploying....'
+               sh 'terraform destroy -auto-approve -var=api_token=${params.LINODE_ACCESS_TOKEN}' 
             }
         }
     }
