@@ -10,7 +10,7 @@ while true; do
         exit 1
     fi
     
-    result2=$(curl --silent https://zeeve-avalanche-mainnet-1008.zeeve.net/V1kj3ko42Gr8ULOK3DzCt/rpc -X POST -H "Content-Type: application/json" --data '{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}' | jq -r .result)
+    result2=$(curl --silent localhost:9650/ext/bc/C/rpc -X POST -H "Content-Type: application/json" --data '{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}' | jq -r .result)
     
     decimal1=$(perl -le 'print hex("'$result1'");')
     decimal2=$(perl -le 'print hex("'$result2'");')
