@@ -42,7 +42,7 @@ pipeline {
             }
         }
 
-        stage('Creat Snapshot and upload to S3 Bucket') {
+        stage('Creat Snapshot and upload to S3 Bucket - Mainnet') {
             steps {
                 script {
                     def serverIP = readFile('serverIP.txt').trim()
@@ -61,7 +61,7 @@ pipeline {
             }
         }
 
-        stage('Creat Snapshot and upload to S3 Bucket') {
+        stage('Creat Snapshot and upload to S3 Bucket - Testnet') {
             steps {
                 script {
                     def serverIP = readFile('serverIP.txt').trim()
