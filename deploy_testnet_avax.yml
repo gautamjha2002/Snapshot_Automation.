@@ -27,11 +27,7 @@
         state: directory
 
     - name: Empty avalanchego directory
-      file:
-        path: /home/ubuntu/zeeve/avalanchego
-        state: absent
-        recurse: yes
-        force: yes
+      command: "rm -rf /home/ubuntu/zeeve/avalanchego/*"
     
     - name: Check if avalanche binary exists
       stat:
