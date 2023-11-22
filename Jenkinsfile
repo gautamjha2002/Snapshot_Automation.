@@ -24,6 +24,7 @@ pipeline {
         stage('Mounting Volume To the Instance') {
             steps {
                 script {
+                    sh "sleep 30"
                     unstash 'IPStash'
                     def serverIP = readFile('serverIP.txt').trim()
                     echo "${serverIP}"
