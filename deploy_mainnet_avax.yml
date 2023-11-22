@@ -1,0 +1,91 @@
+---
+- name: Deploy Avalanche
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Update Package list
+      apt:
+        update_cache: yes
+
+    - name: Installing dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - wget
+        - curl
+        - aria2
+        - pigz
+    
+    - name: Installing aria2c
+      snap:
+        name: aria2c
+        state: present
+
+    - name: Fix broken installation
+      command: apt --fix-broken install -y
+      changed_when: false
+
+    - name: Create Necessary directory
+      file:
+        path: /home/ubuntu/zeeve/avalanchego
+        state: directory
+    
+    - name: Empty avalanchego directory
+      file:
+        path: /home/ubuntu/zeeve/avalanchego
+        state: absent
+        recurse: yes
+        force: yes
+
+    - name: Check if avalanche binary exists
+      stat:
+        path: "/home/ubuntu/zeeve/avalanchego/avalanchego"
+      register: binary_file
+
+    - name: Download and Extracting Avalanche binary file
+      unarchive:
+        src: "https://github.com/ava-labs/avalanchego/releases/download/v1.10.4/avalanchego-linux-amd64-v1.10.4.tar.gz"
+        dest: "/home/ubuntu/zeeve/avalanchego/"
+        remote_src: yes
+      when: not binary_file.stat.exists
+    
+    - name: moving Downloaded file to bin folder
+      file: 
+        src: /home/ubuntu/zeeve/avalanchego/avalanchego-v1.10.4/avalanchego
+        dest: /usr/local/bin/avalanche
+        state: link
+    
+    - name: Download the snapshot and extract the snapshot at a time
+      shell: wget -q -O - {{ mainnet_snapshot_url }} | tar -xzf -
+      args:
+        chdir: /home/ubuntu/zeeve/avalanchego/
+
+    - name: Creating Avalanche systemd service
+      copy:
+        dest: /etc/systemd/system/avax.service
+        content: |
+          [Unit]
+            Description=Avalanche
+            StartLimitIntervalSec=500
+            StartLimitBurst=5
+
+          [Service]
+            LimitNOFILE=65536
+            Restart=on-failure
+            RestartSec=5s
+            ExecStart=avalanche --public-ip=127.0.0.1 --http-port=9650 --staking-port=9651 --db-dir=/home/ubuntu/zeeve/avalanchego/db
+
+          [Install]
+            WantedBy=multi-user.target
+    
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+    
+    - name: Starting Avalanche
+      systemd:
+        name: avax
+        state: started
+        enabled: yes
