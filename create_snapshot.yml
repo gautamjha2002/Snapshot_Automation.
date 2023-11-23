@@ -47,5 +47,10 @@
       environment: 
         AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+
+    - name: Remove avax.service file
+      file:
+        path: /etc/systemd/system/avax.service
+        state: absent
     
     
