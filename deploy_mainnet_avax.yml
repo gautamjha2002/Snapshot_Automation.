@@ -15,14 +15,8 @@
       loop:
         - wget
         - curl
-        - aria2
         - pigz
     
-    - name: Installing aria2c
-      snap:
-        name: aria2c
-        state: present
-
     - name: Fix broken installation
       command: apt --fix-broken install -y
       changed_when: false
