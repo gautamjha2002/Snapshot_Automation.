@@ -25,9 +25,9 @@ pipeline {
             steps {
                 script {
                     sh "sleep 30"
-                    // unstash 'IPStash'
-                    // def serverIP = readFile('serverIP.txt').trim()
-                    // echo "${serverIP}"
+                    unstash 'IPStash'
+                    def serverIP = readFile('serverIP.txt').trim()
+                    echo "${serverIP}"
                     // sh "ansible-playbook -i '${serverIP},' mount_volume.yml -u root --extra-vars \"ansible_ssh_pass=mLGCTk5gV&+f\""
                 }
             }
@@ -37,7 +37,7 @@ pipeline {
             steps {
                 script {
                     def serverIP = readFile('serverIP.txt').trim()
-                    echo ${serverIP}
+                    echo "${serverIP}"
                     // sh "ansible-playbook -i '${serverIP},' deploy_mainnet_avax.yml -u root --extra-vars \"ansible_ssh_pass=mLGCTk5gV&+f mainnet_snapshot_url=${params.MAINNET_STAPSHOT_URL}\""
 
                 }
