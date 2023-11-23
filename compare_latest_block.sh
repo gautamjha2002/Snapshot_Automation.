@@ -1,6 +1,25 @@
 #!/bin/bash
 network=$1
 
+
+until [[ "$output" == "true" ]]; do
+    output=$(curl -s -X POST --data '{
+        "jsonrpc":"2.0",
+        "id"     :1,
+        "method" :"info.isBootstrapped",
+        "params": {
+            "chain":"C"
+        }
+    }' -H 'content-type:application/json;' 127.0.0.1:9650/ext/info | jq -r '.result.isBootstrapped')
+
+    if [[ "$output" == "true" ]]; then
+        echo "Is Bootstrapped: $output"
+    else
+        echo "Is Bootstrapped: $output"
+        sleep 300  # Wait for 5 minutes (300 seconds) before checking again
+    fi
+done
+
 while true; do
     if [[ $network == "mainnet" ]]; then
         result1=$(curl --silent https://api.avax.network/ext/bc/C/rpc -X POST -H "Content-Type: application/json" --data '{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}' | jq -r .result)
