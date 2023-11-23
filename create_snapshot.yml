@@ -4,21 +4,13 @@
   become: yes 
 
   tasks:
-    - name: Download and Extracting AWS CLI script
-      unarchive:
-        src: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
-        dest: "/home/ubuntu"
-        remote_src: yes
-    
-    - name: Running AWS CLI Script 
-      shell: ./aws/install
-      args:
-        chdir: "/home/ubuntu"
-    
-    - name: Configure AWS CLI
-      environment: 
-        AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
-        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    - name: Install AWS CLI
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - awscli
+        - jq
     
     - name: Create Snapshot directory
       file:
@@ -43,8 +35,14 @@
 
     - name: Upload snapshot to bucket 
       command: aws --endpoint-url https://ams1.vultrobjects.com s3 cp /home/ubuntu/zeeve/avax_snapshot/avalanche-test-{{ network }}-snap-{{ today_date }}.tar.gz s3://avax-snapshots-zeeve-internal/
+      environment: 
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
     
     - name: Make Snapshot Public 
       command: aws --endpoint-url https://ams1.vultrobjects.com s3api put-object-acl --bucket avax-snapshots-zeeve-internal --key avax_snapshot/avalanche-test-{{ network }}-snap-{{ today_date }}.tar.gz --acl public-read
+      environment: 
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
     
     
