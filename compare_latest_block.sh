@@ -1,48 +1,82 @@
-#!/bin/bash
-network=$1
-
-
-until [[ "$output" == "true" ]]; do
-    output=$(curl -s -X POST --data '{
-        "jsonrpc":"2.0",
-        "id"     :1,
-        "method" :"info.isBootstrapped",
-        "params": {
-            "chain":"C"
+pipeline {
+    parameters {
+        string(name: "LINODE_ACCESS_TOKEN", defaultValue: "", trim: true, description: "Provide Linode cloud Access Token")
+        string(name: "MAINNET_STAPSHOT_URL", defaultValue: "", trim: true, description: "Provide Snapshot URL for Mainnet")
+        string(name: "TESTNET_STAPSHOT_URL", defaultValue: "", trim: true, description: "Provide Snapshot URL for Testnnet")
+        string(name: "AWS_ACCESS_KEY", defaultValue: "", trim: true, description: "S3 Access Key")
+        password(name: "AWS_SECRET_KEY", defaultValue: "", description: "s3 Secret key")
+    }
+    agent any
+    stages {
+        stage('Creating Node') {
+            steps {
+                script {
+                    echo "Initializing The Terraform"
+                    sh 'terraform init'
+                    echo "Applying The Configuration"
+                    sh "terraform apply -auto-approve -var=\"api_token=${params.LINODE_ACCESS_TOKEN}\""
+                    sh 'terraform output -raw public_ip > serverIP.txt' // Directly save IP to file
+                    stash name: 'IPStash', includes: 'serverIP.txt'
+                    
+                }
+            }
         }
-    }' -H 'content-type:application/json;' 127.0.0.1:9650/ext/info | jq -r '.result.isBootstrapped')
+        stage('Mounting Volume To the Instance') {
+            steps {
+                script {
+                    sh "sleep 30"
+                    // unstash 'IPStash'
+                    // def serverIP = readFile('serverIP.txt').trim()
+                    // echo "${serverIP}"
+                    // sh "ansible-playbook -i '${serverIP},' mount_volume.yml -u root --extra-vars \"ansible_ssh_pass=mLGCTk5gV&+f\""
+                }
+            }
+        }
 
-    if [[ "$output" == "true" ]]; then
-        echo "Is Bootstrapped: $output"
-    else
-        echo "Is Bootstrapped: $output"
-        sleep 300  # Wait for 5 minutes (300 seconds) before checking again
-    fi
-done
+        stage('Deploying Avalanche Mainnet Protocol') {
+            steps {
+                script {
+                    def serverIP = readFile('serverIP.txt').trim()
+                    echo ${serverIP}
+                    // sh "ansible-playbook -i '${serverIP},' deploy_mainnet_avax.yml -u root --extra-vars \"ansible_ssh_pass=mLGCTk5gV&+f mainnet_snapshot_url=${params.MAINNET_STAPSHOT_URL}\""
 
-while true; do
-    if [[ $network == "mainnet" ]]; then
-        result1=$(curl --silent https://api.avax.network/ext/bc/C/rpc -X POST -H "Content-Type: application/json" --data '{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}' | jq -r .result)
-    elif [[ $network == "testnet" ]]; then
-        result1=$(curl --silent https://api.avax-test.network/ext/bc/C/rpc -X POST -H "Content-Type: application/json" --data '{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}' | jq -r .result)
-    else
-        exit 1
-    fi
-    
-    result2=$(curl --silent localhost:9650/ext/bc/C/rpc -X POST -H "Content-Type: application/json" --data '{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}' | jq -r .result)
-    
-    decimal1=$(perl -le 'print hex("'$result1'");')
-    decimal2=$(perl -le 'print hex("'$result2'");')
+                }
+            }
+        }
 
-    if [ $decimal2 -lt $decimal1 ]; then
-        echo "Chain Highest block: $decimal1"
-        echo "Highest block of our node: $decimal2"
-    else
-        echo "Chain Highest block: $decimal1"
-        echo "Highest block of our node: $decimal2"
-        echo "Avax is synced."
-        break
-    fi
+        stage('Creat Snapshot and upload to S3 Bucket - Mainnet') {
+            steps {
+                script {
+                    def serverIP = readFile('serverIP.txt').trim()
+                    sh "ansible-playbook -i '${serverIP},' create_snapshot.yml -u root --extra-vars \"ansible_ssh_pass=mLGCTk5gV&+f aws_access_key_id=${params.AWS_ACCESS_KEY} aws_secret_key=${params.AWS_SECRET_KEY} network=mainnet\""
+                }
+            }
+        }
 
-    sleep 300  # Wait for 5 minutes (300 seconds)
-done
+        stage('Deploying Avalanche Testnet Protocol') {
+            steps {
+                script {
+                    def serverIP = readFile('serverIP.txt').trim()
+                    sh "ansible-playbook -i '${serverIP},' deploy_testnet_avax.yml -u root --extra-vars \"ansible_ssh_pass=mLGCTk5gV&+f testnet_snapshot_url=${params.TESTNET_STAPSHOT_URL}\""
+
+                }
+            }
+        }
+
+        stage('Creat Snapshot and upload to S3 Bucket - Testnet') {
+            steps {
+                script {
+                    def serverIP = readFile('serverIP.txt').trim()
+                    sh "ansible-playbook -i '${serverIP},' create_snapshot.yml -u root --extra-vars \"ansible_ssh_pass=mLGCTk5gV&+f aws_access_key_id=${params.AWS_ACCESS_KEY} aws_secret_key=${params.AWS_SECRET_KEY} network=testnet\""
+                }
+            }
+        }
+
+        stage('Destroying Infra') {
+            steps {
+                sh 'terraform destroy -lock=false -auto-approve -var=api_token=${params.LINODE_ACCESS_TOKEN}' 
+                echo "Destroying Infra"
+            }
+        }
+    }
+}
