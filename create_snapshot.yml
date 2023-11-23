@@ -16,6 +16,9 @@
       file:
         path: /home/ubuntu/zeeve/avax_snapshot
         state: directory
+
+    - name: Empty avalanchego directory
+      command: "rm -rf /home/ubuntu/zeeve/avax_snapshot/*"
     
     - name: Get Today's Date
       set_fact:
